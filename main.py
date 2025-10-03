@@ -7,22 +7,28 @@ from pdf_extractor import PDFExtractor
 from data_loader import FinancialDataLoader
 from agent import DocumentAgents
 from tasks import DocumentTasks
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class FinSight:
     def __init__(self):
         self.pdf_extractor = PDFExtractor()
         self.data_loader = None
 
-    def extract_pdf(self, pdf_path):
+    def extract_pdf(self, pdf_path, password=None):
+        """Extract content from PDF, passing an optional password."""
+        logger.info(f"Starting PDF extraction: {pdf_path}")
         print(f"Starting PDF extraction: {pdf_path}")
-        success = self.pdf_extractor.extract_pdf_content(pdf_path)
+        extraction_path = self.pdf_extractor.extract_pdf_content(pdf_path, password=password)
         
-        if success:
-            pdf_name = Path(pdf_path).stem
-            extraction_path = Config.EXTRACTIONS_DIR / f"{pdf_name}_extracted"
+        if extraction_path:
+            logger.info(f"PDF extraction successful, setting up data loader for: {extraction_path}")
             self.data_loader = FinancialDataLoader(extraction_path)
             return extraction_path
-        return None
+        else:
+            logger.error(f"PDF extraction failed for: {pdf_path}")
+            return None
 
     def get_full_text_content(self):
         if not self.data_loader:
@@ -75,48 +81,58 @@ class FinSight:
         print("🤖 Welcome to FinSight - Your AI Document Assistant!")
         print("=" * 50)
         
-        pdf_path = input("Enter path to PDF file: ").strip()
-        if not Path(pdf_path).exists():
-            print("Error: PDF file not found!")
-            return
-        
-        extraction_path = self.extract_pdf(pdf_path)
-        if not extraction_path:
-            print("PDF extraction failed!")
-            return
-        
-        print(f"✓ PDF extracted to: {extraction_path}")
-        
         while True:
-            print("\nOptions:")
-            print("1. Run comprehensive analysis")
-            print("2. Ask a specific question")
-            print("3. Exit")
+            pdf_path = input("\nEnter path to a PDF file (or type 'exit' to quit): ").strip()
             
-            choice = input("\nChoose an option (1-3): ").strip()
-            
-            if choice == "1":
-                result = self.analyze_document(extraction_path)
-                print("\n" + "="*50)
-                print("DOCUMENT ANALYSIS RESULTS:")
-                print("="*50)
-                print(result)
-                
-            elif choice == "2":
-                question = input("\nEnter your question: ").strip()
-                if question.lower() in ['exit', 'quit']:
-                    break
-                answer = self.ask_question(question, extraction_path)
-                print("\n" + "="*50)
-                print("ANSWER:")
-                print("="*50)
-                print(answer)
-                
-            elif choice == "3":
-                print("Thank you for using FinSight! 👋")
+            if pdf_path.lower() == 'exit':
                 break
-            else:
-                print("Invalid choice. Please try again.")
+
+            if not Path(pdf_path).exists():
+                print("Error: PDF file not found! Please try again.")
+                continue
+            
+            extraction_path = self.extract_pdf(pdf_path)
+            if not extraction_path:
+                print("PDF extraction failed! Please try again.")
+                continue
+            
+            print(f"✓ PDF extracted to: {extraction_path}")
+            
+            while True:
+                print("\nOptions for the current document:")
+                print("1. Run comprehensive analysis")
+                print("2. Ask a specific question")
+                print("3. Process another document")
+                print("4. Exit")
+                
+                choice = input("\nChoose an option (1-4): ").strip()
+                
+                if choice == "1":
+                    result = self.analyze_document(extraction_path)
+                    print("\n" + "="*50)
+                    print("DOCUMENT ANALYSIS RESULTS:")
+                    print("="*50)
+                    print(result)
+                    
+                elif choice == "2":
+                    question = input("\nEnter your question: ").strip()
+                    answer = self.ask_question(question, extraction_path)
+                    print("\n" + "="*50)
+                    print("ANSWER:")
+                    print("="*50)
+                    print(answer)
+                    
+                elif choice == "3":
+                    break
+                
+                elif choice == "4":
+                    print("Thank you for using FinSight! 👋")
+                    return
+                
+                else:
+                    print("Invalid choice. Please try again.")
+
+        print("Thank you for using FinSight! 👋")
 
 def main():
     finsight = FinSight()

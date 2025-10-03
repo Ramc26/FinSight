@@ -12,4 +12,5 @@ dependencies = [
     "pillow>=11.3.0",
     "pymupdf>=1.23.8",
     "python-dotenv>=1.0.0",
+    "streamlit>=1.50.0",
 ]
